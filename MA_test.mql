@@ -27,6 +27,9 @@ int g_magic1 = 12345;
 int buy_order_color = Green;
 int sell_order_color = Red;
 int close_order_color = Violet;
+double g_min_stoploss = 0;
+double g_open_upperfloor = 0;
+double g_open_lowerfloor = 0;
 //+------------------------------------------------------------------+
 //| expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -91,9 +94,9 @@ string GetLastErrorStr() {
    int l_error_0 = GetLastError();
    switch (l_error_0) {
    case 0/* NO_ERROR */:
-      return ("没有返回错误." + "[" + l_error_0 + "]");
+      return ("没有错误返回." + "[" + l_error_0 + "]");
    case 1/* NO_RESULT */:
-      return ("没有返回错误,但结果不明." + "[" + l_error_0 + "]");
+      return ("没有错误返回,但结果不明." + "[" + l_error_0 + "]");
    case 2/* COMMON_ERROR */:
       return ("一般错误." + "[" + l_error_0 + "]");
    case 3/* INVALID_TRADE_PARAMETERS */:
@@ -101,7 +104,7 @@ string GetLastErrorStr() {
    case 4/* SERVER_BUSY */:
       return ("交易服务器繁忙." + "[" + l_error_0 + "]");
    case 5/* OLD_VERSION */:
-      return ("客户端版本太旧." + "[" + l_error_0 + "]");
+      return ("客户终端版本太旧." + "[" + l_error_0 + "]");
    case 6/* NO_CONNECTION */:
       return ("没有连接到服务器." + "[" + l_error_0 + "]");
    case 7/* NOT_ENOUGH_RIGHTS */:
@@ -111,9 +114,9 @@ string GetLastErrorStr() {
    case 9/* MALFUNCTIONAL_TRADE */:
       return ("交易运行故障." + "[" + l_error_0 + "]");
    case 64/* ACCOUNT_DISABLED */:
-      return ("账户被禁止." + "[" + l_error_0 + "]");
+      return ("帐户被禁止." + "[" + l_error_0 + "]");
    case 65/* INVALID_ACCOUNT */:
-      return ("无效的账户." + "[" + l_error_0 + "]");
+      return ("无效的帐户." + "[" + l_error_0 + "]");
    case 128/* TRADE_TIMEOUT */:
       return ("交易超时." + "[" + l_error_0 + "]");
    case 129/* INVALID_PRICE */:
@@ -139,7 +142,7 @@ string GetLastErrorStr() {
    case 139/* ORDER_LOCKED */:
       return ("定单被锁定." + "[" + l_error_0 + "]");
    case 140/* LONG_POSITIONS_ONLY_ALLOWED */:
-      return ("只允许开多单." + "[" + l_error_0 + "]");
+      return ("只允许开多仓." + "[" + l_error_0 + "]");
    case 141/* TOO_MANY_REQUESTS */:
       return ("请求过多." + "[" + l_error_0 + "]");
    case 145/* TRADE_MODIFY_DENIED */:
@@ -169,16 +172,16 @@ void CreateLabel(string name, string text, int fontsize, string fontname, color 
 int start()
   {
 //----
-   //CreateLabel("dhy1", "g_time_diff:" + g_time_diff, 15, "̎ͥ",YellowGreen, 5, 160,2);
-   //CreateLabel("dhy2", "Digits:" + Digits, 15, "̎ͥ",YellowGreen, 5, 140,2);
-   //CreateLabel("dhy3", "Point:" + Point, 15, "̎ͥ",YellowGreen, 5, 120,2);
-   //CreateLabel("dhy4", "stop_level:" + MarketInfo(Symbol(), MODE_STOPLEVEL), 15, "̎ͥ",YellowGreen, 5, 100,2);
+   //CreateLabel("dhy1", "g_time_diff:" + g_time_diff, 15, "宋体",YellowGreen, 5, 160,2);
+   //CreateLabel("dhy2", "Digits:" + Digits, 15, "宋体",YellowGreen, 5, 140,2);
+   //CreateLabel("dhy3", "Point:" + Point, 15, "宋体",YellowGreen, 5, 120,2);
+   //CreateLabel("dhy4", "stop_level:" + MarketInfo(Symbol(), MODE_STOPLEVEL), 15, "宋体",YellowGreen, 5, 100,2);
    if (StringSubstr(Symbol(), 0, 6) != "XAUUSD") {
       Alert("请加载于 XAUUSD!");
       Sleep(10000);
       return (0);
    }
-   if (IsTesting()) g_time_diff = GMT_Mode;//Greenwich Mean Time 格林尼治时间
+   if (IsTesting()) g_time_diff = GMT_Mode;//Greenwich Mean Time 【天】格林尼治标准时间
    else g_time_diff = AutoGMT();
    double close_MA_m15_p80  = iMA(NULL, PERIOD_M15, g_period_shock_MA_m15_p80, 0, MODE_EMA, PRICE_CLOSE, 1);
    double close_MA_m15_p180  = iMA(NULL, PERIOD_M15, g_period_shock_MA_m15_p180, 0, MODE_EMA, PRICE_CLOSE, 1);
@@ -188,17 +191,14 @@ int start()
    CreateLabel("dhy1", "close_MA_m15_p80:" + close_MA_m15_p80, 15, "宋体",YellowGreen, 5, 80,2);
    CreateLabel("dhy2", "close_MA_m15_p180:" + close_MA_m15_p180, 15, "宋体",YellowGreen, 5, 60,2);
    CreateLabel("dhy3", "close_MA_H4_p80:" + close_MA_H4_p80, 15, "宋体",YellowGreen, 5, 40,2);
-   //CreateLabel("dhy4", "close_MA_H4_p180:" + close_MA_H4_p180, 15, "̎ͥ",YellowGreen, 5, 20,2);
-   //CreateLabel("dhy4", "TimeHour(TimeCurrent()):" + TimeHour(TimeCurrent()), 15, "̎ͥ",YellowGreen, 5, 20,2);
+   //CreateLabel("dhy4", "close_MA_H4_p180:" + close_MA_H4_p180, 15, "宋体",YellowGreen, 5, 20,2);
+   //CreateLabel("dhy4", "TimeHour(TimeCurrent()):" + TimeHour(TimeCurrent()), 15, "宋体",YellowGreen, 5, 20,2);
    double price_prime;
    int ticket;
    int order_pos;
    int points_aid = Point * 100;
-   double g_min_stoploss;
-   double g_open_upperfloor;
-   double g_close_lowerfloor;
    //open order        
-   //开单之前,检查是否已经开了一单.
+   //开单之前，检查是否已经开了一单
    if (TimeHour(TimeCurrent()) == trade_time_open && OrdersTotal() == 0)
    {  
       if(close_MA_m15_p80 > close_MA_m15_p180)
@@ -206,11 +206,11 @@ int start()
          price_prime = NormalizeDouble(Ask, Digits);
          if(close_MA_H4_p80 > close_MA_H4_p180)
          {
-            ticket=OrderSend(Symbol(), OP_BUY, lots_min*2, price_prime, g_slippage, 0, 0, "BUY Order 0.2", g_magic1, 0, buy_order_color);
+            ticket=OrderSend(Symbol(), OP_BUY, lots_min*2, price_prime, g_slippage, 0, 0, "BUY Order " + lots_min*2, g_magic1, 0, buy_order_color);
          }
          else if(close_MA_H4_p80 < close_MA_H4_p180)
          {
-            ticket=OrderSend(Symbol(), OP_BUY, lots_min, price_prime, g_slippage, 0, 0, "BUY Order 0.1", g_magic1, 0, buy_order_color);
+            ticket=OrderSend(Symbol(), OP_BUY, lots_min, price_prime, g_slippage, 0, 0, "BUY Order " + lots_min, g_magic1, 0, buy_order_color);
          }
       }
       if(close_MA_m15_p80 < close_MA_m15_p180)
@@ -218,19 +218,19 @@ int start()
          price_prime = NormalizeDouble(Bid, Digits);
          if(close_MA_H4_p80 > close_MA_H4_p180)
          {
-            ticket=OrderSend(Symbol(), OP_SELL, lots_min, price_prime, g_slippage, 0, 0, "SELL Order 0.1", g_magic1, 0, sell_order_color);
+            ticket=OrderSend(Symbol(), OP_SELL, lots_min, price_prime, g_slippage, 0, 0, "SELL Order " + lots_min, g_magic1, 0, sell_order_color);
          }
          else if(close_MA_H4_p80 < close_MA_H4_p180)
          {
-            ticket=OrderSend(Symbol(), OP_SELL, lots_min*2, price_prime, g_slippage, 0, 0, "SELL Order 0.2", g_magic1, 0, sell_order_color);
+            ticket=OrderSend(Symbol(), OP_SELL, lots_min*2, price_prime, g_slippage, 0, 0, "SELL Order " + lots_min*2, g_magic1, 0, sell_order_color);
          }
       }
        if(ticket<0)
        {
-          Print("OrderSend 失败错误 #", GetLastErrorStr());
+          Print("OrderSend 失败错误 #",GetLastError());
           return(0);
        }
-         //开仓的时候设置止损价格为开仓价的上下15个点.
+         //开仓的时候设置止损价格为开仓价的上下15个点
          order_pos = OrdersTotal() - 1;
          if (!OrderSelect(order_pos, SELECT_BY_POS, MODE_TRADES)) Print("选择定单错误:", order_pos);
          else {
@@ -238,17 +238,20 @@ int start()
             OrderModify(OrderTicket(), OrderOpenPrice(), OrderOpenPrice()-g_stoploss*points_aid, OrderTakeProfit(), 0, buy_order_color);
             g_min_stoploss = OrderOpenPrice()-g_stoploss*points_aid;
             g_open_upperfloor = OrderOpenPrice() + 5*points_aid;
-            g_close_lowerfloor = OrderOpenPrice() - 5*points_aid;
+            g_open_lowerfloor = OrderOpenPrice() - 5*points_aid;
             }
          else if(OrderType() == OP_SELL){
             OrderModify(OrderTicket(), OrderOpenPrice(), OrderOpenPrice()+g_stoploss*points_aid, OrderTakeProfit(), 0, sell_order_color);
             g_min_stoploss = OrderOpenPrice()+g_stoploss*points_aid;
             g_open_upperfloor = OrderOpenPrice() - 5*points_aid;
-            g_close_lowerfloor = OrderOpenPrice() + 5*points_aid;
+            g_open_lowerfloor = OrderOpenPrice() + 5*points_aid;
             }
          }
+         CreateLabel("dhy4", "g_open_upperfloor:" + g_open_upperfloor + "g_open_lowerfloor:" + g_open_lowerfloor,
+         15, "宋体",YellowGreen, 5, 20,2);
+         
    }
-   //移动止损, 当前价格的15个点
+   //移动止损，当前价格的15个点
    for (order_pos = OrdersTotal() - 1; order_pos >= 0; order_pos--) {
       if (!OrderSelect(order_pos, SELECT_BY_POS, MODE_TRADES)) Print("选择定单错误:", order_pos);
       else {
@@ -262,37 +265,40 @@ int start()
          }
       }
    }
-   //开了一个单子之后,继续加仓
-   if (TimeHour(TimeCurrent()) == trade_time_open && OrdersTotal() >= 1)
+   //开了一个单子之后，继续加仓
+   if (TimeHour(TimeCurrent()) < trade_time_close && OrdersTotal() >= 1)
    {  
-       //根据前一个单子的价格加仓
+       //根据前一个单子的价格开仓
        order_pos = OrdersTotal() - 1;
        if (!OrderSelect(order_pos, SELECT_BY_POS, MODE_TRADES)) Print("选择定单错误:", order_pos);
        else {
          if (OrderType() == OP_BUY) {
-            if(Ask >= g_open_upperfloor || Ask <= g_close_lowerfloor){
+            if(Ask >= g_open_upperfloor || Ask <= g_open_lowerfloor){
                CreateLabel("dhy4", "OrderType():" + OrderType(), 15, "宋体",YellowGreen, 5, 20,2);
                
                price_prime = NormalizeDouble(Ask, Digits);
                ticket=OrderSend(Symbol(), OP_BUY, OrderLots(), price_prime, g_slippage, 0, 0, "BUY Order "+OrderLots(), g_magic1, 0, buy_order_color);
-               if(Ask == g_open_upperfloor){
+               if(Ask >= g_open_upperfloor){
                   g_open_upperfloor=Ask + 5;
-               } else if(Ask == g_close_lowerfloor){
-                  g_open_upperfloor=Ask - 5;
+               } else if(Ask <= g_open_lowerfloor){
+                  g_open_lowerfloor=Ask - 5;
                }
+               CreateLabel("dhy4", "g_open_upperfloor:" + g_open_upperfloor + "g_open_lowerfloor:" + g_open_lowerfloor,
+               15, "宋体",YellowGreen, 5, 20,2);
             }
          }
          else if(OrderType() == OP_SELL){
-            if(Bid <= g_open_upperfloor || Bid >= g_close_lowerfloor){
-               CreateLabel("dhy4", "OrderType():" + OrderType(), 15, "宋体",YellowGreen, 5, 20,2);
-               
+            if(Bid <= g_open_upperfloor || Bid >= g_open_lowerfloor){     
                price_prime = NormalizeDouble(Bid, Digits);
                ticket=OrderSend(Symbol(), OP_SELL, OrderLots(), price_prime, g_slippage, 0, 0, "SELL Order "+OrderLots(), g_magic1, 0, sell_order_color);
-               if(Bid == g_open_upperfloor){
+               if(Bid <= g_open_upperfloor){
                   g_open_upperfloor=Bid - 5;
-               } else if(Bid == g_close_lowerfloor){
-                  g_open_upperfloor=Bid + 5;
+               } else if(Bid >= g_open_lowerfloor){
+                  g_open_lowerfloor=Bid + 5;
                }
+               
+               CreateLabel("dhy4", "g_open_upperfloor:" + g_open_upperfloor + "g_open_lowerfloor:" + g_open_lowerfloor,
+               15, "宋体",YellowGreen, 5, 20,2);
             }
          }
        }
@@ -317,7 +323,7 @@ int start()
    if(TimeHour(TimeCurrent()) == trade_time_close)
    {
       for (order_pos = OrdersTotal() - 1; order_pos >= 0; order_pos--) {
-      if (!OrderSelect(order_pos, SELECT_BY_POS, MODE_TRADES)) Print("选择定单错误::", order_pos);
+      if (!OrderSelect(order_pos, SELECT_BY_POS, MODE_TRADES)) Print("选择定单错误:", order_pos);
       else {
          /*
          Print("order_pos:", order_pos);
@@ -344,6 +350,8 @@ int start()
          else if(OrderType() == OP_SELL){
             OrderClose(OrderTicket(), OrderLots(), NormalizeDouble(Ask, Digits), g_slippage, close_order_color);
          }
+         g_open_upperfloor = 0;
+         g_open_lowerfloor = 0;
        }
      }  
    }
