@@ -23,6 +23,7 @@ extern double lots_min = 0.1;
 extern int g_slippage = 30;
 extern double g_stoploss = 15;
 extern double g_takeprofit = 0;
+extern int g_order_step = 5;
 int g_magic1 = 12345;
 int buy_order_color = Green;
 int sell_order_color = Red;
@@ -237,33 +238,19 @@ int start()
             if (OrderType() == OP_BUY) {
             OrderModify(OrderTicket(), OrderOpenPrice(), OrderOpenPrice()-g_stoploss*points_aid, OrderTakeProfit(), 0, buy_order_color);
             g_min_stoploss = OrderOpenPrice()-g_stoploss*points_aid;
-            g_open_upperfloor = OrderOpenPrice() + 5*points_aid;
-            g_open_lowerfloor = OrderOpenPrice() - 5*points_aid;
+            g_open_upperfloor = OrderOpenPrice() + g_order_step*points_aid;
+            g_open_lowerfloor = OrderOpenPrice() - g_order_step*points_aid;
             }
          else if(OrderType() == OP_SELL){
             OrderModify(OrderTicket(), OrderOpenPrice(), OrderOpenPrice()+g_stoploss*points_aid, OrderTakeProfit(), 0, sell_order_color);
             g_min_stoploss = OrderOpenPrice()+g_stoploss*points_aid;
-            g_open_upperfloor = OrderOpenPrice() - 5*points_aid;
-            g_open_lowerfloor = OrderOpenPrice() + 5*points_aid;
+            g_open_upperfloor = OrderOpenPrice() - g_order_step*points_aid;
+            g_open_lowerfloor = OrderOpenPrice() + g_order_step*points_aid;
             }
          }
          CreateLabel("dhy4", "g_open_upperfloor:" + g_open_upperfloor + "g_open_lowerfloor:" + g_open_lowerfloor,
          15, "宋体",YellowGreen, 5, 20,2);
          
-   }
-   //移动止损，当前价格的15个点
-   for (order_pos = OrdersTotal() - 1; order_pos >= 0; order_pos--) {
-      if (!OrderSelect(order_pos, SELECT_BY_POS, MODE_TRADES)) Print("选择定单错误:", order_pos);
-      else {
-      if (OrderType() == OP_BUY && g_min_stoploss < Ask-g_stoploss*points_aid) {
-         OrderModify(OrderTicket(), OrderOpenPrice(), Ask-g_stoploss*points_aid, OrderTakeProfit(), 0, buy_order_color);
-         g_min_stoploss = Ask-g_stoploss*points_aid;
-         }
-      else if(OrderType() == OP_SELL && g_min_stoploss > Bid+g_stoploss*points_aid){
-         OrderModify(OrderTicket(), OrderOpenPrice(), Bid+g_stoploss*points_aid, OrderTakeProfit(), 0, sell_order_color);
-         g_min_stoploss = Bid+g_stoploss*points_aid;
-         }
-      }
    }
    //开了一个单子之后，继续加仓
    if (TimeHour(TimeCurrent()) < trade_time_close && OrdersTotal() >= 1)
@@ -274,50 +261,45 @@ int start()
        else {
          if (OrderType() == OP_BUY) {
             if(Ask >= g_open_upperfloor || Ask <= g_open_lowerfloor){
-               CreateLabel("dhy4", "OrderType():" + OrderType(), 15, "宋体",YellowGreen, 5, 20,2);
-               
                price_prime = NormalizeDouble(Ask, Digits);
                ticket=OrderSend(Symbol(), OP_BUY, OrderLots(), price_prime, g_slippage, 0, 0, "BUY Order "+OrderLots(), g_magic1, 0, buy_order_color);
-               if(Ask >= g_open_upperfloor){
-                  g_open_upperfloor=Ask + 5;
-               } else if(Ask <= g_open_lowerfloor){
-                  g_open_lowerfloor=Ask - 5;
+               if(Ask > g_open_upperfloor){
+                  g_open_upperfloor=Ask + g_order_step*points_aid;
+               } else if(Ask < g_open_lowerfloor){
+                  g_open_lowerfloor=Ask - g_order_step*points_aid;
                }
-               CreateLabel("dhy4", "g_open_upperfloor:" + g_open_upperfloor + "g_open_lowerfloor:" + g_open_lowerfloor,
-               15, "宋体",YellowGreen, 5, 20,2);
             }
          }
          else if(OrderType() == OP_SELL){
             if(Bid <= g_open_upperfloor || Bid >= g_open_lowerfloor){     
                price_prime = NormalizeDouble(Bid, Digits);
                ticket=OrderSend(Symbol(), OP_SELL, OrderLots(), price_prime, g_slippage, 0, 0, "SELL Order "+OrderLots(), g_magic1, 0, sell_order_color);
-               if(Bid <= g_open_upperfloor){
-                  g_open_upperfloor=Bid - 5;
-               } else if(Bid >= g_open_lowerfloor){
-                  g_open_lowerfloor=Bid + 5;
+               if(Bid < g_open_upperfloor){
+                  g_open_upperfloor=Bid - g_order_step*points_aid;
+               } else if(Bid > g_open_lowerfloor){
+                  g_open_lowerfloor=Bid + g_order_step*points_aid;
                }
-               
-               CreateLabel("dhy4", "g_open_upperfloor:" + g_open_upperfloor + "g_open_lowerfloor:" + g_open_lowerfloor,
-               15, "宋体",YellowGreen, 5, 20,2);
             }
          }
        }
-       //开仓的时候设置止损价格为开仓价的上下15个点
-       for (order_pos = OrdersTotal() - 1; order_pos >= 0; order_pos--) {
-         if (!OrderSelect(order_pos, SELECT_BY_POS, MODE_TRADES)) Print("选择定单错误:", order_pos);
-         else {
-            if (OrderType() == OP_BUY) {
-            if(g_min_stoploss < OrderOpenPrice()-g_stoploss*points_aid)
-               g_min_stoploss = OrderOpenPrice()-g_stoploss*points_aid;
-            OrderModify(OrderTicket(), OrderOpenPrice(), g_min_stoploss, OrderTakeProfit(), 0, buy_order_color);
-            }
-         else if(OrderType() == OP_SELL){
-            if(g_min_stoploss > OrderOpenPrice()+g_stoploss*points_aid)
-               g_min_stoploss = OrderOpenPrice()+g_stoploss*points_aid;
-            OrderModify(OrderTicket(), OrderOpenPrice(), g_min_stoploss, OrderTakeProfit(), 0, sell_order_color);
+   }
+   //移动止损，当前价格的15个点
+   for (order_pos = OrdersTotal() - 1; order_pos >= 0; order_pos--) {
+      if (!OrderSelect(order_pos, SELECT_BY_POS, MODE_TRADES)) Print("选择定单错误:", order_pos);
+      else {
+         if (OrderType() == OP_BUY && g_min_stoploss < Ask-g_stoploss*points_aid) {
+            g_min_stoploss = Ask-g_stoploss*points_aid;
+            if(OrderStopLoss() < g_min_stoploss){
+               OrderModify(OrderTicket(), OrderOpenPrice(), g_min_stoploss, OrderTakeProfit(), 0, buy_order_color);
             }
          }
-       }
+         else if(OrderType() == OP_SELL && g_min_stoploss > Bid+g_stoploss*points_aid){
+            g_min_stoploss = Bid+g_stoploss*points_aid;
+            if(OrderStopLoss() > g_min_stoploss){
+               OrderModify(OrderTicket(), OrderOpenPrice(), g_min_stoploss, OrderTakeProfit(), 0, sell_order_color);
+            }
+         }
+      }
    }
    //close order
    if(TimeHour(TimeCurrent()) == trade_time_close)
