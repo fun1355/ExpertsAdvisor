@@ -31,6 +31,7 @@ int close_order_color = Violet;
 double g_min_stoploss = 0;
 double g_open_upperfloor = 0;
 double g_open_lowerfloor = 0;
+int g_can_open_order = 1;
 //+------------------------------------------------------------------+
 //| expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -200,7 +201,7 @@ int start()
    int points_aid = Point * 100;
    //open order        
    //开单之前，检查是否已经开了一单
-   if (TimeHour(TimeCurrent()) == trade_time_open && OrdersTotal() == 0)
+   if (TimeHour(TimeCurrent()) == trade_time_open && OrdersTotal() == 0 && g_can_open_order == 1)
    {  
       if(close_MA_m15_p80 > close_MA_m15_p180)
       {
@@ -253,7 +254,7 @@ int start()
          
    }
    //开了一个单子之后，继续加仓 
-   if (TimeHour(TimeCurrent()) < trade_time_close && OrdersTotal() >= 1)
+   if (TimeHour(TimeCurrent()) < trade_time_close && OrdersTotal() >= 1 && g_can_open_order == 1)
    {  
        //根据前一个单子的价格开仓
        order_pos = OrdersTotal() - 1;
@@ -305,6 +306,10 @@ int start()
          }
       }
    }
+   //如果單子已經止損了, 就不再開單了
+   if(g_min_stoploss < Ask || g_min_stoploss > Bid){
+      g_can_open_order = 0;
+   }
    //close order
    if(TimeHour(TimeCurrent()) == trade_time_close)
    {
@@ -338,6 +343,7 @@ int start()
          }
          g_open_upperfloor = 0;
          g_open_lowerfloor = 0;
+         g_can_open_order = 1;
        }
      }  
    }
