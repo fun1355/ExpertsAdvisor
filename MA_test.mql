@@ -201,8 +201,9 @@ int start()
    int points_aid = Point * 100;
    //open order        
    //开单之前，检查是否已经开了一单
-   if (TimeHour(TimeCurrent()) == trade_time_open && OrdersTotal() == 0 && g_can_open_order == 1)
+   if (TimeHour(TimeCurrent()) == trade_time_open && OrdersTotal() == 0)
    {  
+      g_can_open_order = 1;
       if(close_MA_m15_p80 > close_MA_m15_p180)
       {
          price_prime = NormalizeDouble(Ask, Digits);
@@ -292,6 +293,10 @@ int start()
             if(g_min_stoploss < Ask-g_stoploss*points_aid){
                g_min_stoploss = Ask-g_stoploss*points_aid;
             }
+            //如果單子已經止損了, 就不再開單了
+            if(g_min_stoploss > Ask){
+               g_can_open_order = 0;
+            }
             if(OrderStopLoss()==0 || OrderStopLoss() < g_min_stoploss){
                OrderModify(OrderTicket(), OrderOpenPrice(), g_min_stoploss, OrderTakeProfit(), 0, buy_order_color);
             }
@@ -300,15 +305,15 @@ int start()
             if(g_min_stoploss > Bid+g_stoploss*points_aid){
                g_min_stoploss = Bid+g_stoploss*points_aid;
             }
+            //如果單子已經止損了, 就不再開單了
+            if(g_min_stoploss < Bid){
+               g_can_open_order = 0;
+            }
             if(OrderStopLoss()==0 || OrderStopLoss() > g_min_stoploss){
                OrderModify(OrderTicket(), OrderOpenPrice(), g_min_stoploss, OrderTakeProfit(), 0, sell_order_color);
             }
          }
       }
-   }
-   //如果單子已經止損了, 就不再開單了
-   if(g_min_stoploss < Ask || g_min_stoploss > Bid){
-      g_can_open_order = 0;
    }
    //close order
    if(TimeHour(TimeCurrent()) == trade_time_close)
@@ -344,6 +349,7 @@ int start()
          g_open_upperfloor = 0;
          g_open_lowerfloor = 0;
          g_can_open_order = 1;
+         g_min_stoploss = 0;
        }
      }  
    }
