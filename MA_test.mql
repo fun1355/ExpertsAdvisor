@@ -231,18 +231,18 @@ int start()
           Print("OrderSend 失败错误 #",GetLastError());
           return(0);
        }
-         //开仓的时候设置止损价格为开仓价的上下15个点
+         //開倉的時候設置止損價格,幾個浮動的上下閾值等
          order_pos = OrdersTotal() - 1;
          if (!OrderSelect(order_pos, SELECT_BY_POS, MODE_TRADES)) Print("选择定单错误:", order_pos);
          else {
             if (OrderType() == OP_BUY) {
-            OrderModify(OrderTicket(), OrderOpenPrice(), OrderOpenPrice()-g_stoploss*points_aid, OrderTakeProfit(), 0, buy_order_color);
+            //OrderModify(OrderTicket(), OrderOpenPrice(), OrderOpenPrice()-g_stoploss*points_aid, OrderTakeProfit(), 0, buy_order_color);
             g_min_stoploss = OrderOpenPrice()-g_stoploss*points_aid;
             g_open_upperfloor = OrderOpenPrice() + g_order_step*points_aid;
             g_open_lowerfloor = OrderOpenPrice() - g_order_step*points_aid;
             }
          else if(OrderType() == OP_SELL){
-            OrderModify(OrderTicket(), OrderOpenPrice(), OrderOpenPrice()+g_stoploss*points_aid, OrderTakeProfit(), 0, sell_order_color);
+            //OrderModify(OrderTicket(), OrderOpenPrice(), OrderOpenPrice()+g_stoploss*points_aid, OrderTakeProfit(), 0, sell_order_color);
             g_min_stoploss = OrderOpenPrice()+g_stoploss*points_aid;
             g_open_upperfloor = OrderOpenPrice() - g_order_step*points_aid;
             g_open_lowerfloor = OrderOpenPrice() + g_order_step*points_aid;
@@ -252,7 +252,7 @@ int start()
          15, "宋体",YellowGreen, 5, 20,2);
          
    }
-   //开了一个单子之后，继续加仓
+   //开了一个单子之后，继续加仓 
    if (TimeHour(TimeCurrent()) < trade_time_close && OrdersTotal() >= 1)
    {  
        //根据前一个单子的价格开仓
@@ -287,15 +287,19 @@ int start()
    for (order_pos = OrdersTotal() - 1; order_pos >= 0; order_pos--) {
       if (!OrderSelect(order_pos, SELECT_BY_POS, MODE_TRADES)) Print("选择定单错误:", order_pos);
       else {
-         if (OrderType() == OP_BUY && g_min_stoploss < Ask-g_stoploss*points_aid) {
-            g_min_stoploss = Ask-g_stoploss*points_aid;
-            if(OrderStopLoss() < g_min_stoploss){
+         if (OrderType() == OP_BUY) {
+            if(g_min_stoploss < Ask-g_stoploss*points_aid){
+               g_min_stoploss = Ask-g_stoploss*points_aid;
+            }
+            if(OrderStopLoss()==0 || OrderStopLoss() < g_min_stoploss){
                OrderModify(OrderTicket(), OrderOpenPrice(), g_min_stoploss, OrderTakeProfit(), 0, buy_order_color);
             }
          }
-         else if(OrderType() == OP_SELL && g_min_stoploss > Bid+g_stoploss*points_aid){
-            g_min_stoploss = Bid+g_stoploss*points_aid;
-            if(OrderStopLoss() > g_min_stoploss){
+         else if(OrderType() == OP_SELL){
+            if(g_min_stoploss > Bid+g_stoploss*points_aid){
+               g_min_stoploss = Bid+g_stoploss*points_aid;
+            }
+            if(OrderStopLoss()==0 || OrderStopLoss() > g_min_stoploss){
                OrderModify(OrderTicket(), OrderOpenPrice(), g_min_stoploss, OrderTakeProfit(), 0, sell_order_color);
             }
          }
